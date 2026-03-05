@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Weather Dashboard (A2 TEFL)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .weather-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .img-gradient {
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 100%);
+        }
+
+        /* Modal Overlay Styles */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #modal-container {
+            width: 100%;
+            max-width: 500px;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        #modal-overlay.active {
+            display: flex;
+        }
+
+        #modal-overlay.active #modal-container {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto mb-10 text-center">
+        <h1 class="text-4xl font-extrabold text-slate-800 mb-2">World Weather Dashboard</h1>
+        <p class="text-slate-500 font-bold uppercase tracking-wider text-sm">10:00 AM Average Conditions • A2 Level English</p>
+        <p class="text-blue-500 text-xs mt-2 font-bold uppercase">Click a card to see more!</p>
+    </header>
+
+    <!-- The protagonist modal -->
+    <div id="modal-overlay" onclick="closeModal()">
+        <div id="modal-container" onclick="event.stopPropagation()">
+            <!-- Selected card content will be injected here -->
+        </div>
+    </div>
+
+    <div id="dashboard-grid" class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Cards will be generated here -->
+    </div>
+
+    <footer class="max-w-6xl mx-auto mt-12 p-8 bg-white rounded-3xl text-center border-2 border-slate-200 border-dashed">
+        <h3 class="text-xl font-bold mb-4 text-slate-400">Vocabulary Guide</h3>
+        <div class="flex flex-wrap justify-center gap-8 font-bold text-sm">
+            <div class="flex items-center gap-2 text-yellow-500">☀️ SUNNY</div>
+            <div class="flex items-center gap-2 text-gray-400">☁️ CLOUDY</div>
+            <div class="flex items-center gap-2 text-blue-500">🌧️ RAINY/WET</div>
+            <div class="flex items-center gap-2 text-slate-400">💨 WINDY</div>
+        </div>
+    </footer>
+
+    <script>
+        const weatherData = [
+            { 
+                city: "Hwaseong", country: "South Korea", flag: "🇰🇷", temp: 5, cond: "Sunny", 
+                desc: "The sky is blue and the air is cold today.",
+                img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7tz6-_U0MV-0ax7Pdq-tm8YyIVK0fhrqFiQ&s",
+                frequency: { always: "Sunny", sometimes: "Windy", never: "Icy" },
+                icon: "☀️"
+            },
+            { 
+                city: "Berlin", country: "Germany", flag: "🇩🇪", temp: 4, cond: "Cloudy", 
+                desc: "It is a grey morning in the city.",
+                img: "https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Cloudy", sometimes: "Foggy", never: "Sunny" },
+                icon: "☁️"
+            },
+            { 
+                city: "Rio de Janeiro", country: "Brazil", flag: "🇧🇷", temp: 27, cond: "Hot and Sunny", 
+                desc: "The sun is very bright and hot today.",
+                img: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Sunny", sometimes: "Wet", never: "Icy" },
+                icon: "☀️"
+            },
+            { 
+                city: "London", country: "United Kingdom", flag: "🇬🇧", temp: 8, cond: "Cloudy", 
+                desc: "There are many clouds in the sky.",
+                img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Cloudy", sometimes: "Wet", never: "Icy" },
+                icon: "☁️"
+            },
+            { 
+                city: "Paris", country: "France", flag: "🇫🇷", temp: 7, cond: "Cold", 
+                desc: "It is a cold morning in Paris.",
+                img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Cloudy", sometimes: "Windy", never: "Icy" },
+                icon: "☁️"
+            },
+            { 
+                city: "Buenos Aires", country: "Argentina", flag: "🇦🇷", temp: 22, cond: "Warm", 
+                desc: "The weather is very nice and warm.",
+                img: "https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Sunny", sometimes: "Windy", never: "Icy" },
+                icon: "☀️"
+            },
+            { 
+                city: "Seoul", country: "South Korea", flag: "🇰🇷", temp: 6, cond: "Sunny", 
+                desc: "It is sunny but the wind is cold.",
+                img: "https://www.livelikeitstheweekend.com/wp-content/uploads/2025/07/Seoul-things-to-do_-71.jpg",
+                frequency: { always: "Sunny", sometimes: "Foggy", never: "Wet" },
+                icon: "☀️"
+            },
+            { 
+                city: "Mexico City", country: "Mexico", flag: "🇲🇽", temp: 19, cond: "Sunny", 
+                desc: "The sun is shining and it is warm.",
+                img: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&q=80&w=400",
+                frequency: { always: "Sunny", sometimes: "Cloudy", never: "Icy" },
+                icon: "☀️"
+            },
+            { 
+                city: "São Paulo", country: "Brazil", flag: "🇧🇷", temp: 24, cond: "Rainy", 
+                desc: "It is raining a lot this morning.",
+                img: "https://img.freepik.com/premium-photo/rainy-weather-rio-de-janeiro-brazil_367038-903.jpg",
+                frequency: { always: "Wet", sometimes: "Cloudy", never: "Icy" },
+                icon: "🌧️"
+            },
+            { 
+                city: "Lyon", country: "France", flag: "🇫🇷", temp: 9, cond: "Cloudy", 
+                desc: "The sky is dark with many clouds.",
+                img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQk4CCvzuEwHu01_9EeHbUBFzheYg11qLml-w&s",
+                frequency: { always: "Cloudy", sometimes: "Foggy", never: "Sunny" },
+                icon: "☁️"
+            }
+        ];
+
+        const grid = document.getElementById('dashboard-grid');
+        const overlay = document.getElementById('modal-overlay');
+        const modalContainer = document.getElementById('modal-container');
+
+        function openModal(index) {
+            const item = weatherData[index];
+            modalContainer.innerHTML = generateCardHTML(item, true);
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Stop scrolling
+        }
+
+        function closeModal() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+
+        function generateCardHTML(item, isModal = false) {
+            return `
+                <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-full ${isModal ? 'cursor-default' : ''}" ${!isModal ? `onclick="openModal(${weatherData.indexOf(item)})"` : ''}>
+                    <div class="${isModal ? 'h-64' : 'h-48'} relative">
+                        <img src="${item.img}" alt="${item.city}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 img-gradient"></div>
+                        <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
+                            <span class="text-xl">${item.flag}</span>
+                            <span class="font-bold text-slate-800">${item.city}</span>
+                        </div>
+                        ${isModal ? `<button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>` : ''}
+                        <div class="absolute bottom-4 right-4 bg-white p-2 rounded-2xl shadow-lg text-3xl">
+                            ${item.icon}
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="text-4xl font-black">${item.temp}°C</span>
+                            <div class="h-8 w-px bg-slate-200"></div>
+                            <span class="text-lg font-bold text-blue-600 uppercase tracking-wide">${item.cond}</span>
+                        </div>
+                        
+                        <p class="text-slate-600 font-medium leading-relaxed mb-4 text-md italic">
+                            "${item.desc}"
+                        </p>
+
+                        <div class="bg-blue-50 rounded-2xl p-4 mb-4">
+                            <div class="flex items-center gap-2 mb-2 text-blue-700 font-bold text-[10px] uppercase tracking-widest">
+                                ℹ️ Frequency
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-lg border border-blue-100">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Always (100%)</p>
+                                    <p class="text-xs font-black text-blue-600">${item.frequency.always}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-blue-100">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Sometimes (50%)</p>
+                                    <p class="text-xs font-black text-slate-700">${item.frequency.sometimes}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-blue-100">
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Never (0%)</p>
+                                    <p class="text-xs font-black text-red-400">${item.frequency.never}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter text-slate-400">
+                            <div>🌡️ 10:00 AM</div>
+                            <div>🕒 Local Time</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        weatherData.forEach((item, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = generateCardHTML(item);
+            grid.appendChild(wrapper.firstElementChild);
+        });
+    </script>
+</body>
+</html>
