@@ -5,312 +5,579 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Weather Dashboard (A2 TEFL)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-        }
+        body { font-family: 'Nunito', sans-serif; background-color: #f1f5f9; }
 
-        .weather-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-        }
+        .weather-card { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
+        .weather-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .img-gradient { background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 100%); }
 
-        .weather-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
+        /* Tab styles */
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .img-gradient {
-            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 100%);
-        }
+        /* Modal */
+        #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); backdrop-filter:blur(8px); z-index:50; justify-content:center; align-items:center; padding:20px; }
+        #modal-container { width:100%; max-width:500px; transform:scale(0.9); transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        #modal-overlay.active { display:flex; }
+        #modal-overlay.active #modal-container { transform:scale(1); }
 
-        /* Modal Overlay Styles */
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            z-index: 50;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+        /* Tourist cards */
+        .tourist-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .tourist-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px -5px rgba(0,0,0,0.15); }
 
-        #modal-container {
-            width: 100%;
-            max-width: 500px;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .grammar-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:999px; font-weight:700; font-size:13px; }
+        .can-pill { background:#d1fae5; color:#065f46; }
+        .must-pill { background:#dbeafe; color:#1e40af; }
+        .mustnt-pill { background:#fee2e2; color:#991b1b; }
 
-        #modal-overlay.active {
-            display: flex;
-        }
+        .place-img { width:100%; height:160px; object-fit:cover; border-radius:16px; }
 
-        #modal-overlay.active #modal-container {
-            transform: scale(1);
-        }
+        /* City filter buttons */
+        .city-filter { transition: all 0.2s; cursor:pointer; }
+        .city-filter.selected { background:#f59e0b; color:white; transform:scale(1.05); }
+
+        /* Pictogram box */
+        .picto-box { display:flex; flex-direction:column; align-items:center; gap:4px; background:white; border-radius:16px; padding:10px 14px; border:2px solid #e2e8f0; flex:1; }
+        .picto-box .emoji { font-size:28px; }
+        .picto-box .label { font-size:10px; font-weight:800; text-transform:uppercase; color:#64748b; letter-spacing:0.05em; text-align:center; }
+
+        .section-label { font-family:'Fredoka One', cursive; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <header class="max-w-6xl mx-auto mb-10 text-center">
-        <h1 class="text-4xl font-extrabold text-slate-800 mb-2">World Weather Dashboard</h1>
-        <p class="text-slate-500 font-bold uppercase tracking-wider text-sm">10:00 AM Average Conditions • A2 Level English</p>
-        <p class="text-blue-500 text-xs mt-2 font-bold uppercase">Click a card to see more!</p>
+    <header class="max-w-6xl mx-auto mb-8 text-center">
+        <h1 class="text-4xl font-extrabold text-slate-800 mb-2" style="font-family:'Fredoka One',cursive;">🌍 World Explorer Dashboard</h1>
+        <p class="text-slate-500 font-bold uppercase tracking-wider text-sm">Weather & Tourism • A2 Level English</p>
     </header>
 
-    <!-- Pre-teen Word Guide Section -->
-    <section class="max-w-6xl mx-auto mb-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-        <h2 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
-            <span>📚</span> Word Guide for Explorers
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Weather Words -->
-            <div>
-                <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">Weather Types</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                        <span class="text-2xl">☀️</span>
-                        <div>
-                            <p class="font-bold text-slate-800">Sunny</p>
-                            <p class="text-xs text-slate-500">The sun is big and bright. No clouds!</p>
-                        </div>
+    <!-- TABS -->
+    <div class="max-w-6xl mx-auto mb-8 flex gap-3 justify-center flex-wrap">
+        <button class="tab-btn active px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wide bg-white text-slate-600 border-2 border-slate-200" onclick="switchTab('weather')">☀️ Weather</button>
+        <button class="tab-btn px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wide bg-white text-slate-600 border-2 border-slate-200" onclick="switchTab('explore')">🗺️ Explore</button>
+    </div>
+
+    <!-- ═══════════════════ WEATHER TAB ═══════════════════ -->
+    <div id="tab-weather" class="tab-content active">
+
+        <section class="max-w-6xl mx-auto mb-12 bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2"><span>📚</span> Word Guide for Explorers</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">Weather Types</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><span class="text-2xl">☀️</span><div><p class="font-bold text-slate-800">Sunny</p><p class="text-xs text-slate-500">The sun is big and bright. No clouds!</p></div></div>
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><span class="text-2xl">☁️</span><div><p class="font-bold text-slate-800">Cloudy</p><p class="text-xs text-slate-500">The sky is full of white or grey clouds.</p></div></div>
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><span class="text-2xl">🌫️</span><div><p class="font-bold text-slate-800">Foggy</p><p class="text-xs text-slate-500">Clouds are on the ground! It's hard to see.</p></div></div>
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"><span class="text-2xl">❄️</span><div><p class="font-bold text-slate-800">Icy</p><p class="text-xs text-slate-500">Very, very cold! Water turns into hard ice.</p></div></div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                        <span class="text-2xl">☁️</span>
-                        <div>
-                            <p class="font-bold text-slate-800">Cloudy</p>
-                            <p class="text-xs text-slate-500">The sky is full of white or grey clouds.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                        <span class="text-2xl">🌫️</span>
-                        <div>
-                            <p class="font-bold text-slate-800">Foggy</p>
-                            <p class="text-xs text-slate-500">Clouds are on the ground! It's hard to see.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                        <span class="text-2xl">❄️</span>
-                        <div>
-                            <p class="font-bold text-slate-800">Icy</p>
-                            <p class="text-xs text-slate-500">Very, very cold! Water turns into hard ice.</p>
-                        </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-purple-600 uppercase tracking-widest mb-4">How often? (Frequency)</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-2xl border border-purple-100"><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-purple-600 shadow-sm">100%</div><div><p class="font-bold text-slate-800 text-sm uppercase">Always</p><p class="text-xs text-slate-500 font-medium">It happens every single day.</p></div></div>
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100"><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-blue-600 shadow-sm">50%</div><div><p class="font-bold text-slate-800 text-sm uppercase">Sometimes</p><p class="text-xs text-slate-500 font-medium">It happens half of the time.</p></div></div>
+                        <div class="flex items-center gap-3 p-3 bg-red-50 rounded-2xl border border-red-100"><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-red-600 shadow-sm">0%</div><div><p class="font-bold text-slate-800 text-sm uppercase">Never</p><p class="text-xs text-slate-500 font-medium">It is impossible! No way!</p></div></div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Frequency Words -->
-            <div>
-                <h3 class="text-sm font-black text-purple-600 uppercase tracking-widest mb-4">How often? (Frequency)</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-2xl border border-purple-100">
-                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-purple-600 shadow-sm">100%</div>
+        <div id="modal-overlay" onclick="closeModal()">
+            <div id="modal-container" onclick="event.stopPropagation()"></div>
+        </div>
+
+        <div id="dashboard-grid" class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <footer class="max-w-6xl mx-auto mt-12 p-8 bg-white rounded-3xl text-center border-2 border-slate-200 border-dashed">
+            <h3 class="text-xl font-bold mb-4 text-slate-400">Vocabulary Guide</h3>
+            <div class="flex flex-wrap justify-center gap-8 font-bold text-sm">
+                <div class="flex items-center gap-2 text-yellow-500">☀️ SUNNY</div>
+                <div class="flex items-center gap-2 text-gray-400">☁️ CLOUDY</div>
+                <div class="flex items-center gap-2 text-blue-500">🌧️ RAINY/WET</div>
+                <div class="flex items-center gap-2 text-slate-400">💨 WINDY</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ═══════════════════ EXPLORE TAB ═══════════════════ -->
+    <div id="tab-explore" class="tab-content">
+
+        <!-- Grammar Guide Banner -->
+        <section class="max-w-6xl mx-auto mb-8 bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-black text-slate-800 mb-5 flex items-center gap-2 section-label">📖 Grammar Guide: CAN · MUST · MUSTN'T</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-emerald-50 rounded-2xl p-4 border-2 border-emerald-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">✅</span>
                         <div>
-                            <p class="font-bold text-slate-800 text-sm uppercase">Always</p>
-                            <p class="text-xs text-slate-500 font-medium">It happens every single day.</p>
+                            <p class="font-black text-emerald-800 text-lg">CAN</p>
+                            <p class="text-xs text-emerald-600 font-bold uppercase">It is possible / allowed</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl border border-blue-100">
-                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-blue-600 shadow-sm">50%</div>
+                    <p class="text-sm text-emerald-700 font-semibold bg-white rounded-xl p-3">"You <strong>can</strong> visit the church."<br><em class="text-xs text-slate-400">→ It is possible to do this.</em></p>
+                </div>
+                <div class="bg-blue-50 rounded-2xl p-4 border-2 border-blue-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">⚠️</span>
                         <div>
-                            <p class="font-bold text-slate-800 text-sm uppercase">Sometimes</p>
-                            <p class="text-xs text-slate-500 font-medium">It happens half of the time.</p>
+                            <p class="font-black text-blue-800 text-lg">MUST</p>
+                            <p class="text-xs text-blue-600 font-bold uppercase">It is necessary / obligatory</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 p-3 bg-red-50 rounded-2xl border border-red-100">
-                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center font-black text-red-600 shadow-sm">0%</div>
+                    <p class="text-sm text-blue-700 font-semibold bg-white rounded-xl p-3">"You <strong>must</strong> follow the path."<br><em class="text-xs text-slate-400">→ It is very important. Do it!</em></p>
+                </div>
+                <div class="bg-red-50 rounded-2xl p-4 border-2 border-red-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">🚫</span>
                         <div>
-                            <p class="font-bold text-slate-800 text-sm uppercase">Never</p>
-                            <p class="text-xs text-slate-500 font-medium">It is impossible! No way!</p>
+                            <p class="font-black text-red-800 text-lg">MUSTN'T</p>
+                            <p class="text-xs text-red-600 font-bold uppercase">It is not allowed / forbidden</p>
                         </div>
                     </div>
+                    <p class="text-sm text-red-700 font-semibold bg-white rounded-xl p-3">"You <strong>mustn't</strong> touch the art."<br><em class="text-xs text-slate-400">→ Don't do this! It is wrong.</em></p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- The protagonist modal -->
-    <div id="modal-overlay" onclick="closeModal()">
-        <div id="modal-container" onclick="event.stopPropagation()">
-            <!-- Selected card content will be injected here -->
+        <!-- City Filter -->
+        <div class="max-w-6xl mx-auto mb-6">
+            <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">🔍 Filter by city:</p>
+            <div class="flex flex-wrap gap-2" id="city-filters"></div>
         </div>
+
+        <!-- Tourist Cards Grid -->
+        <div id="tourist-grid" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+
     </div>
-
-    <div id="dashboard-grid" class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Cards will be generated here -->
-    </div>
-
-    <footer class="max-w-6xl mx-auto mt-12 p-8 bg-white rounded-3xl text-center border-2 border-slate-200 border-dashed">
-        <h3 class="text-xl font-bold mb-4 text-slate-400">Vocabulary Guide</h3>
-        <div class="flex flex-wrap justify-center gap-8 font-bold text-sm">
-            <div class="flex items-center gap-2 text-yellow-500">☀️ SUNNY</div>
-            <div class="flex items-center gap-2 text-gray-400">☁️ CLOUDY</div>
-            <div class="flex items-center gap-2 text-blue-500">🌧️ RAINY/WET</div>
-            <div class="flex items-center gap-2 text-slate-400">💨 WINDY</div>
-        </div>
-    </footer>
 
     <script>
-        const weatherData = [
-            { 
-                city: "Hwaseong", country: "South Korea", flag: "🇰🇷", temp: 5, cond: "Sunny", 
-                desc: "In Hwaseong the weather is sunny and cold, so people use warm coats.",
-                img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7tz6-_U0MV-0ax7Pdq-tm8YyIVK0fhrqFiQ&s",
-                frequency: { always: "Sunny", sometimes: "Windy", never: "Icy" },
-                icon: "☀️"
-            },
-            { 
-                city: "Bogotá", country: "Colombia", flag: "🇨🇴", temp: 15, cond: "Cloudy", 
-                desc: "In Bogota the weather is cloudy and cool, so people use jackets and jeans.",
-                img: "https://lp-cms-production.imgix.net/2023-01/iStock-1182337590-RFC.jpg",
-                frequency: { always: "Cloudy", sometimes: "Wet", never: "Icy" },
-                icon: "☁️"
-            },
-            { 
-                city: "Berlin", country: "Germany", flag: "🇩🇪", temp: 4, cond: "Cloudy", 
-                desc: "People use thick scarves because the weather in Berlin is cloudy and cold.",
-                img: "https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Cloudy", sometimes: "Foggy", never: "Sunny" },
-                icon: "☁️"
-            },
-            { 
-                city: "Rio de Janeiro", country: "Brazil", flag: "🇧🇷", temp: 27, cond: "Hot", 
-                desc: "In Rio the weather is very hot, so people use sunglasses and hats.",
-                img: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Sunny", sometimes: "Wet", never: "Icy" },
-                icon: "☀️"
-            },
-            { 
-                city: "London", country: "United Kingdom", flag: "🇬🇧", temp: 8, cond: "Rainy", 
-                desc: "People use umbrellas because the weather in London is often rainy.",
-                img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Cloudy", sometimes: "Wet", never: "Icy" },
-                icon: "🌧️"
-            },
-            { 
-                city: "Paris", country: "France", flag: "🇫🇷", temp: 7, cond: "Cold", 
-                desc: "In Paris the weather is cold, so people use stylish boots and coats.",
-                img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Cloudy", sometimes: "Windy", never: "Icy" },
-                icon: "☁️"
-            },
-            { 
-                city: "Buenos Aires", country: "Argentina", flag: "🇦🇷", temp: 22, cond: "Warm", 
-                desc: "In Buenos Aires the weather is warm, so people use t-shirts and light pants.",
-                img: "https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Sunny", sometimes: "Windy", never: "Icy" },
-                icon: "☀️"
-            },
-            { 
-                city: "Seoul", country: "South Korea", flag: "🇰🇷", temp: 6, cond: "Windy", 
-                desc: "People use windbreakers because the weather in Seoul is windy and cool.",
-                img: "https://www.livelikeitstheweekend.com/wp-content/uploads/2025/07/Seoul-things-to-do_-71.jpg",
-                frequency: { always: "Sunny", sometimes: "Foggy", never: "Wet" },
-                icon: "💨"
-            },
-            { 
-                city: "Mexico City", country: "Mexico", flag: "🇲🇽", temp: 19, cond: "Sunny", 
-                desc: "In Mexico City the weather is sunny, so people use sunblock and caps.",
-                img: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&q=80&w=400",
-                frequency: { always: "Sunny", sometimes: "Cloudy", never: "Icy" },
-                icon: "☀️"
-            },
-            { 
-                city: "Pyongyang", country: "North Korea", flag: "🇰🇵", temp: 3, cond: "Cold", 
-                desc: "In Pyongyang the weather is cold and clear, so people use thick jackets and hats.",
-                img: "https://www.people.com.cn/mediafile/pic/GQ/20160106/26/10750944424147789186.jpg",
-                frequency: { always: "Cold", sometimes: "Snowy", never: "Hot" },
-                icon: "❄️"
-            }
-        ];
+    // ─── WEATHER DATA ───────────────────────────────────────
+    const weatherData = [
+        { city:"Hwaseong", country:"South Korea", flag:"🇰🇷", temp:5, cond:"Sunny", desc:"In Hwaseong the weather is sunny and cold, so people use warm coats.", img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7tz6-_U0MV-0ax7Pdq-tm8YyIVK0fhrqFiQ&s", frequency:{always:"Sunny",sometimes:"Windy",never:"Icy"}, icon:"☀️" },
+        { city:"Bogotá", country:"Colombia", flag:"🇨🇴", temp:15, cond:"Cloudy", desc:"In Bogota the weather is cloudy and cool, so people use jackets and jeans.", img:"https://lp-cms-production.imgix.net/2023-01/iStock-1182337590-RFC.jpg", frequency:{always:"Cloudy",sometimes:"Wet",never:"Icy"}, icon:"☁️" },
+        { city:"Berlin", country:"Germany", flag:"🇩🇪", temp:4, cond:"Cloudy", desc:"People use thick scarves because the weather in Berlin is cloudy and cold.", img:"https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&q=80&w=400", frequency:{always:"Cloudy",sometimes:"Foggy",never:"Sunny"}, icon:"☁️" },
+        { city:"Rio de Janeiro", country:"Brazil", flag:"🇧🇷", temp:27, cond:"Hot", desc:"In Rio the weather is very hot, so people use sunglasses and hats.", img:"https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&q=80&w=400", frequency:{always:"Sunny",sometimes:"Wet",never:"Icy"}, icon:"☀️" },
+        { city:"London", country:"United Kingdom", flag:"🇬🇧", temp:8, cond:"Rainy", desc:"People use umbrellas because the weather in London is often rainy.", img:"https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=400", frequency:{always:"Cloudy",sometimes:"Wet",never:"Icy"}, icon:"🌧️" },
+        { city:"Paris", country:"France", flag:"🇫🇷", temp:7, cond:"Cold", desc:"In Paris the weather is cold, so people use stylish boots and coats.", img:"https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=400", frequency:{always:"Cloudy",sometimes:"Windy",never:"Icy"}, icon:"☁️" },
+        { city:"Buenos Aires", country:"Argentina", flag:"🇦🇷", temp:22, cond:"Warm", desc:"In Buenos Aires the weather is warm, so people use t-shirts and light pants.", img:"https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&q=80&w=400", frequency:{always:"Sunny",sometimes:"Windy",never:"Icy"}, icon:"☀️" },
+        { city:"Seoul", country:"South Korea", flag:"🇰🇷", temp:6, cond:"Windy", desc:"People use windbreakers because the weather in Seoul is windy and cool.", img:"https://www.livelikeitstheweekend.com/wp-content/uploads/2025/07/Seoul-things-to-do_-71.jpg", frequency:{always:"Sunny",sometimes:"Foggy",never:"Wet"}, icon:"💨" },
+        { city:"Mexico City", country:"Mexico", flag:"🇲🇽", temp:19, cond:"Sunny", desc:"In Mexico City the weather is sunny, so people use sunblock and caps.", img:"https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&q=80&w=400", frequency:{always:"Sunny",sometimes:"Cloudy",never:"Icy"}, icon:"☀️" },
+        { city:"Pyongyang", country:"North Korea", flag:"🇰🇵", temp:3, cond:"Cold", desc:"In Pyongyang the weather is cold and clear, so people use thick jackets and hats.", img:"https://www.people.com.cn/mediafile/pic/GQ/20160106/26/10750944424147789186.jpg", frequency:{always:"Cold",sometimes:"Snowy",never:"Hot"}, icon:"❄️" }
+    ];
 
-        const grid = document.getElementById('dashboard-grid');
-        const overlay = document.getElementById('modal-overlay');
-        const modalContainer = document.getElementById('modal-container');
-
-        function openModal(index) {
-            const item = weatherData[index];
-            modalContainer.innerHTML = generateCardHTML(item, true);
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Stop scrolling
+    // ─── TOURIST DATA ────────────────────────────────────────
+    const touristData = [
+        {
+            city: "Bogotá", flag: "🇨🇴", country: "Colombia",
+            color: "from-yellow-400 to-red-500",
+            places: [
+                {
+                    name: "Monserrate ⛰️",
+                    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/MonserrateBogota2.jpg/1280px-MonserrateBogota2.jpg",
+                    desc: "A big mountain with a beautiful white church at the top.",
+                    pictograms: ["⛪","🏔️","🌄"],
+                    pictogramLabels: ["Church","Mountain","View"],
+                    rules: [
+                        { type:"can", text:"You can visit the church at the top." },
+                        { type:"must", text:"You must follow the path to go up." },
+                        { type:"mustnt", text:"You mustn't leave the trail — it's dangerous!" }
+                    ]
+                },
+                {
+                    name: "Simón Bolívar Park 🌳",
+                    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Parque_Metropolitano_Sim%C3%B3n_Bol%C3%ADvar_-_Bogot%C3%A1.jpg/1280px-Parque_Metropolitano_Sim%C3%B3n_Bol%C3%ADvar_-_Bogot%C3%A1.jpg",
+                    desc: "The biggest park in Bogotá. Great for walks, picnics, and sports.",
+                    pictograms: ["🚴","🧺","⛹️"],
+                    pictogramLabels: ["Cycling","Picnic","Sports"],
+                    rules: [
+                        { type:"can", text:"You can ride a bicycle in the park." },
+                        { type:"must", text:"You must pick up your rubbish." },
+                        { type:"mustnt", text:"You mustn't bring dogs without a lead." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "London", flag: "🇬🇧", country: "United Kingdom",
+            color: "from-red-500 to-blue-700",
+            places: [
+                {
+                    name: "Big Ben 🕰️",
+                    img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=600",
+                    desc: "A famous tall clock tower next to the River Thames.",
+                    pictograms: ["📷","🚶","🕰️"],
+                    pictogramLabels: ["Photo","Walk","Clock"],
+                    rules: [
+                        { type:"can", text:"You can take photos from the bridge." },
+                        { type:"must", text:"You must book a tour to go inside." },
+                        { type:"mustnt", text:"You mustn't block the pavement for other people." }
+                    ]
+                },
+                {
+                    name: "The British Museum 🏛️",
+                    img: "https://images.unsplash.com/photo-1555219048-96a1a1db3a0a?auto=format&fit=crop&q=80&w=600",
+                    desc: "A huge museum with objects from all over the world. It is free!",
+                    pictograms: ["🆓","🎭","🗿"],
+                    pictogramLabels: ["Free","Culture","History"],
+                    rules: [
+                        { type:"can", text:"You can enter the museum for free." },
+                        { type:"must", text:"You must be quiet inside the rooms." },
+                        { type:"mustnt", text:"You mustn't touch the exhibits." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Paris", flag: "🇫🇷", country: "France",
+            color: "from-blue-500 to-indigo-600",
+            places: [
+                {
+                    name: "Eiffel Tower 🗼",
+                    img: "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&q=80&w=600",
+                    desc: "The most famous tower in the world! It has beautiful lights at night.",
+                    pictograms: ["🗼","📷","🌙"],
+                    pictogramLabels: ["Tower","Photo","Night lights"],
+                    rules: [
+                        { type:"can", text:"You can go to the top and see all of Paris." },
+                        { type:"must", text:"You must buy a ticket online before you go." },
+                        { type:"mustnt", text:"You mustn't bring big bags — security checks them." }
+                    ]
+                },
+                {
+                    name: "The Louvre Museum 🖼️",
+                    img: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&q=80&w=600",
+                    desc: "The biggest art museum in the world. The Mona Lisa painting is here!",
+                    pictograms: ["🖼️","🗿","👑"],
+                    pictogramLabels: ["Art","History","Treasure"],
+                    rules: [
+                        { type:"can", text:"You can see the famous Mona Lisa painting." },
+                        { type:"must", text:"You must wear comfortable shoes — it is very big!" },
+                        { type:"mustnt", text:"You mustn't use flash when you take photos." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Rio de Janeiro", flag: "🇧🇷", country: "Brazil",
+            color: "from-green-500 to-yellow-500",
+            places: [
+                {
+                    name: "Christ the Redeemer ✝️",
+                    img: "https://images.unsplash.com/photo-1544989164-31e4ec8e1e53?auto=format&fit=crop&q=80&w=600",
+                    desc: "A giant statue of Jesus Christ on top of a green mountain.",
+                    pictograms: ["🗿","🚡","📷"],
+                    pictogramLabels: ["Statue","Cable car","Photo"],
+                    rules: [
+                        { type:"can", text:"You can take the cable car to the top." },
+                        { type:"must", text:"You must arrive early — it gets very crowded!" },
+                        { type:"mustnt", text:"You mustn't climb on the statue." }
+                    ]
+                },
+                {
+                    name: "Copacabana Beach 🏖️",
+                    img: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&q=80&w=600",
+                    desc: "One of the most famous beaches in the world. White sand and blue water!",
+                    pictograms: ["🏄","🌊","🩱"],
+                    pictogramLabels: ["Surfing","Ocean","Swimming"],
+                    rules: [
+                        { type:"can", text:"You can swim and play volleyball on the beach." },
+                        { type:"must", text:"You must use sunscreen — the sun is very strong!" },
+                        { type:"mustnt", text:"You mustn't leave your things alone on the sand." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Berlin", flag: "🇩🇪", country: "Germany",
+            color: "from-slate-600 to-slate-800",
+            places: [
+                {
+                    name: "Brandenburg Gate 🏛️",
+                    img: "https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&q=80&w=600",
+                    desc: "A very old and important gate in the centre of Berlin.",
+                    pictograms: ["🏛️","📷","🚶"],
+                    pictogramLabels: ["History","Photo","Walking"],
+                    rules: [
+                        { type:"can", text:"You can walk through the gate and take photos." },
+                        { type:"must", text:"You must be respectful — it is a historic place." },
+                        { type:"mustnt", text:"You mustn't ride a bicycle through the gate." }
+                    ]
+                },
+                {
+                    name: "Berlin Wall Memorial 🧱",
+                    img: "https://images.unsplash.com/photo-1567598508481-65985588e295?auto=format&fit=crop&q=80&w=600",
+                    desc: "A part of the old Berlin Wall. It is a very important place in history.",
+                    pictograms: ["🧱","📖","🕯️"],
+                    pictogramLabels: ["Wall","Learn","Remember"],
+                    rules: [
+                        { type:"can", text:"You can read the information boards in English." },
+                        { type:"must", text:"You must be quiet and show respect here." },
+                        { type:"mustnt", text:"You mustn't write or paint on the memorial wall." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Buenos Aires", flag: "🇦🇷", country: "Argentina",
+            color: "from-sky-400 to-white",
+            places: [
+                {
+                    name: "La Boca Neighbourhood 🎨",
+                    img: "https://images.unsplash.com/photo-1628955280591-6a5a5a75d285?auto=format&fit=crop&q=80&w=600",
+                    desc: "A colourful neighbourhood famous for tango dancing and bright painted houses.",
+                    pictograms: ["🎨","💃","🏠"],
+                    pictogramLabels: ["Colours","Tango","Houses"],
+                    rules: [
+                        { type:"can", text:"You can watch tango dancers in the street." },
+                        { type:"must", text:"You must take care of your belongings here." },
+                        { type:"mustnt", text:"You mustn't go outside the main tourist street alone." }
+                    ]
+                },
+                {
+                    name: "Recoleta Cemetery 🌸",
+                    img: "https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&q=80&w=600",
+                    desc: "A famous and beautiful cemetery with big marble tombs. It is like a small city!",
+                    pictograms: ["🌸","🏛️","📖"],
+                    pictogramLabels: ["Flowers","History","Stories"],
+                    rules: [
+                        { type:"can", text:"You can visit for free — the entrance is open." },
+                        { type:"must", text:"You must walk slowly and read the names." },
+                        { type:"mustnt", text:"You mustn't make loud noises — show respect." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Seoul", flag: "🇰🇷", country: "South Korea",
+            color: "from-pink-400 to-red-500",
+            places: [
+                {
+                    name: "Gyeongbokgung Palace 🏯",
+                    img: "https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&q=80&w=600",
+                    desc: "A beautiful royal palace from 600 years ago. You can wear traditional Korean clothes!",
+                    pictograms: ["🏯","👘","📷"],
+                    pictogramLabels: ["Palace","Hanbok","Photo"],
+                    rules: [
+                        { type:"can", text:"You can rent a hanbok (Korean dress) and enter free!" },
+                        { type:"must", text:"You must remove your shoes in some indoor areas." },
+                        { type:"mustnt", text:"You mustn't touch or sit on the old furniture." }
+                    ]
+                },
+                {
+                    name: "Myeongdong Market 🛍️",
+                    img: "https://images.unsplash.com/photo-1569144157591-c60f3f82f137?auto=format&fit=crop&q=80&w=600",
+                    desc: "A very busy market full of street food, shops, and K-beauty products.",
+                    pictograms: ["🍢","💄","🛍️"],
+                    pictogramLabels: ["Street food","Beauty","Shopping"],
+                    rules: [
+                        { type:"can", text:"You can try delicious Korean street food here." },
+                        { type:"must", text:"You must keep your money safe — it is very crowded." },
+                        { type:"mustnt", text:"You mustn't eat inside the small shops." }
+                    ]
+                }
+            ]
+        },
+        {
+            city: "Mexico City", flag: "🇲🇽", country: "Mexico",
+            color: "from-orange-500 to-green-600",
+            places: [
+                {
+                    name: "Zócalo Plaza 🏙️",
+                    img: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&q=80&w=600",
+                    desc: "One of the biggest city squares in the world. The National Palace is here!",
+                    pictograms: ["🏙️","🇲🇽","🎉"],
+                    pictogramLabels: ["City centre","Mexico","Events"],
+                    rules: [
+                        { type:"can", text:"You can see free art and murals inside the Palace." },
+                        { type:"must", text:"You must show your ID to enter government buildings." },
+                        { type:"mustnt", text:"You mustn't fly drones over the historic area." }
+                    ]
+                },
+                {
+                    name: "Chapultepec Castle 🏰",
+                    img: "https://images.unsplash.com/photo-1512813195386-6cf811ad3542?auto=format&fit=crop&q=80&w=600",
+                    desc: "A castle on a big hill inside a park. It has great views of the city.",
+                    pictograms: ["🏰","🌲","🌆"],
+                    pictogramLabels: ["Castle","Park","City views"],
+                    rules: [
+                        { type:"can", text:"You can walk up the hill for amazing views." },
+                        { type:"must", text:"You must buy a ticket to enter the castle museum." },
+                        { type:"mustnt", text:"You mustn't run inside the museum rooms." }
+                    ]
+                }
+            ]
         }
+    ];
 
-        function closeModal() {
-            overlay.classList.remove('active');
-            document.body.style.overflow = 'auto'; // Restore scrolling
-        }
-
-        function generateCardHTML(item, isModal = false) {
-            const index = weatherData.indexOf(item);
-            return `
-                <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-full ${isModal ? 'cursor-default' : ''}" ${!isModal ? `onclick="openModal(${index})"` : ''}>
-                    <div class="${isModal ? 'h-64' : 'h-48'} relative">
-                        <img src="${item.img}" alt="${item.city}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1449156001931-929fbc679700?auto=format&fit=crop&q=80&w=400'">
-                        <div class="absolute inset-0 img-gradient"></div>
-                        <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
-                            <span class="text-xl">${item.flag}</span>
-                            <span class="font-bold text-slate-800">${item.city}</span>
-                        </div>
-                        ${isModal ? `<button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>` : ''}
-                        <div class="absolute bottom-4 right-4 bg-white p-2 rounded-2xl shadow-lg text-3xl">
-                            ${item.icon}
+    // ─── WEATHER TAB RENDERING ─────────────────────────────
+    function generateCardHTML(item, isModal=false) {
+        const index = weatherData.indexOf(item);
+        return `
+            <div class="weather-card bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-full ${isModal?'cursor-default':''}" ${!isModal?`onclick="openModal(${index})"`:''}>
+                <div class="${isModal?'h-64':'h-48'} relative">
+                    <img src="${item.img}" alt="${item.city}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1449156001931-929fbc679700?auto=format&fit=crop&q=80&w=400'">
+                    <div class="absolute inset-0 img-gradient"></div>
+                    <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
+                        <span class="text-xl">${item.flag}</span>
+                        <span class="font-bold text-slate-800">${item.city}</span>
+                    </div>
+                    ${isModal?`<button onclick="closeModal()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>`:''}
+                    <div class="absolute bottom-4 right-4 bg-white p-2 rounded-2xl shadow-lg text-3xl">${item.icon}</div>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="text-4xl font-black">${item.temp}°C</span>
+                        <div class="h-8 w-px bg-slate-200"></div>
+                        <span class="text-lg font-bold text-blue-600 uppercase tracking-wide">${item.cond}</span>
+                    </div>
+                    <p class="text-slate-600 font-medium leading-relaxed mb-4 text-md">${item.desc}</p>
+                    <div class="bg-blue-50 rounded-2xl p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2 text-blue-700 font-bold text-[10px] uppercase tracking-widest">ℹ️ Frequency</div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-white p-2 rounded-lg border border-blue-100"><p class="text-[9px] text-slate-400 font-bold uppercase">Always (100%)</p><p class="text-xs font-black text-blue-600">${item.frequency.always}</p></div>
+                            <div class="bg-white p-2 rounded-lg border border-blue-100"><p class="text-[9px] text-slate-400 font-bold uppercase">Sometimes (50%)</p><p class="text-xs font-black text-slate-700">${item.frequency.sometimes}</p></div>
+                            <div class="bg-white p-2 rounded-lg border border-blue-100"><p class="text-[9px] text-slate-400 font-bold uppercase">Never (0%)</p><p class="text-xs font-black text-red-400">${item.frequency.never}</p></div>
                         </div>
                     </div>
+                    <div class="bg-slate-50 rounded-2xl p-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter text-slate-400">
+                        <div>🌡️ 10:00 AM</div><div>🕒 Local Time</div>
+                    </div>
+                </div>
+            </div>`;
+    }
 
-                    <div class="p-6">
-                        <div class="flex items-center gap-4 mb-4">
-                            <span class="text-4xl font-black">${item.temp}°C</span>
-                            <div class="h-8 w-px bg-slate-200"></div>
-                            <span class="text-lg font-bold text-blue-600 uppercase tracking-wide">${item.cond}</span>
-                        </div>
-                        
-                        <p class="text-slate-600 font-medium leading-relaxed mb-4 text-md">
-                            ${item.desc}
-                        </p>
+    const grid = document.getElementById('dashboard-grid');
+    const overlay = document.getElementById('modal-overlay');
+    const modalContainer = document.getElementById('modal-container');
 
-                        <div class="bg-blue-50 rounded-2xl p-4 mb-4">
-                            <div class="flex items-center gap-2 mb-2 text-blue-700 font-bold text-[10px] uppercase tracking-widest">
-                                ℹ️ Frequency
+    function openModal(index) {
+        const item = weatherData[index];
+        modalContainer.innerHTML = generateCardHTML(item, true);
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeModal() {
+        overlay.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    weatherData.forEach(item => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = generateCardHTML(item);
+        grid.appendChild(wrapper.firstElementChild);
+    });
+
+    // ─── EXPLORE TAB RENDERING ─────────────────────────────
+    let activeFilter = 'all';
+
+    function renderTouristCards(filter='all') {
+        const touristGrid = document.getElementById('tourist-grid');
+        const filtered = filter === 'all' ? touristData : touristData.filter(c => c.city === filter);
+        touristGrid.innerHTML = '';
+
+        filtered.forEach(cityData => {
+            const card = document.createElement('div');
+            card.className = 'tourist-card bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100';
+
+            const pillColors = { can:'can-pill', must:'must-pill', mustnt:'mustnt-pill' };
+            const pillIcons = { can:'✅', must:'⚠️', mustnt:'🚫' };
+
+            const placesHTML = cityData.places.map(place => `
+                <div class="border-t border-slate-100 pt-5 mt-5">
+                    <div class="mb-3">
+                        <img src="${place.img}" alt="${place.name}" class="place-img" onerror="this.style.display='none'">
+                    </div>
+                    <h4 class="font-black text-slate-800 text-lg mb-1">${place.name}</h4>
+                    <p class="text-slate-500 text-sm font-semibold mb-4 leading-relaxed">${place.desc}</p>
+
+                    <!-- Pictograms -->
+                    <div class="flex gap-2 mb-4">
+                        ${place.pictograms.map((p,i) => `
+                            <div class="picto-box">
+                                <span class="emoji">${p}</span>
+                                <span class="label">${place.pictogramLabels[i]}</span>
                             </div>
-                            <div class="grid grid-cols-3 gap-2 text-center">
-                                <div class="bg-white p-2 rounded-lg border border-blue-100">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Always (100%)</p>
-                                    <p class="text-xs font-black text-blue-600">${item.frequency.always}</p>
-                                </div>
-                                <div class="bg-white p-2 rounded-lg border border-blue-100">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Sometimes (50%)</p>
-                                    <p class="text-xs font-black text-slate-700">${item.frequency.sometimes}</p>
-                                </div>
-                                <div class="bg-white p-2 rounded-lg border border-blue-100">
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase">Never (0%)</p>
-                                    <p class="text-xs font-black text-red-400">${item.frequency.never}</p>
-                                </div>
-                            </div>
-                        </div>
+                        `).join('')}
+                    </div>
 
-                        <div class="bg-slate-50 rounded-2xl p-4 flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter text-slate-400">
-                            <div>🌡️ 10:00 AM</div>
-                            <div>🕒 Local Time</div>
+                    <!-- Grammar rules -->
+                    <div class="space-y-2">
+                        ${place.rules.map(rule => `
+                            <div class="flex items-start gap-2">
+                                <span class="grammar-pill ${pillColors[rule.type]} shrink-0 mt-0.5">
+                                    ${pillIcons[rule.type]} ${rule.type.toUpperCase()}
+                                </span>
+                                <p class="text-sm font-semibold text-slate-700 pt-1">${rule.text}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            card.innerHTML = `
+                <div class="bg-gradient-to-r ${cityData.color} p-5">
+                    <div class="flex items-center gap-3">
+                        <span class="text-4xl">${cityData.flag}</span>
+                        <div>
+                            <h3 class="text-white font-black text-2xl section-label">${cityData.city}</h3>
+                            <p class="text-white/80 text-xs font-bold uppercase tracking-widest">${cityData.country}</p>
                         </div>
                     </div>
                 </div>
+                <div class="p-6">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-black text-amber-500 uppercase tracking-widest">📍 2 Places to visit</span>
+                    </div>
+                    ${placesHTML}
+                </div>
             `;
-        }
-
-        weatherData.forEach((item, index) => {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = generateCardHTML(item);
-            grid.appendChild(wrapper.firstElementChild);
+            touristGrid.appendChild(card);
         });
+    }
+
+    function buildCityFilters() {
+        const container = document.getElementById('city-filters');
+        const allBtn = document.createElement('button');
+        allBtn.className = 'city-filter selected px-4 py-2 rounded-full bg-white border-2 border-slate-200 font-bold text-sm text-slate-600';
+        allBtn.textContent = '🌍 All Cities';
+        allBtn.onclick = () => {
+            activeFilter = 'all';
+            document.querySelectorAll('.city-filter').forEach(b => b.classList.remove('selected'));
+            allBtn.classList.add('selected');
+            renderTouristCards('all');
+        };
+        container.appendChild(allBtn);
+
+        touristData.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'city-filter px-4 py-2 rounded-full bg-white border-2 border-slate-200 font-bold text-sm text-slate-600';
+            btn.textContent = `${c.flag} ${c.city}`;
+            btn.onclick = () => {
+                activeFilter = c.city;
+                document.querySelectorAll('.city-filter').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                renderTouristCards(c.city);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    // ─── TAB SWITCHING ─────────────────────────────────────
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-'+tab).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // Init
+    buildCityFilters();
+    renderTouristCards();
     </script>
 </body>
 </html>
